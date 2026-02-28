@@ -1,0 +1,195 @@
+{
+  "name": "terminal-command-favorites",
+  "displayName": "Terminal command favorites",
+  "description": "",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PhysSong/terminal-command-favorites"
+  },
+  "author": "Hyunjin Song <tteu.ingog@gmail.com>",
+  "publisher": "physsong",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.109.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "terminalCommandFavorites",
+          "title": "Terminal Favorites",
+          "icon": "media/terminal-favorites.svg"
+        }
+      ]
+    },
+    "views": {
+      "terminalCommandFavorites": [
+        {
+          "id": "terminalCommandFavoritesView",
+          "name": "Favorites",
+          "icon": "media/terminal-favorites.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "terminalCommandFavoritesView",
+        "contents": "No favorite commands yet.\n[Add Favorite](command:terminal-command-favorites.addFavorite)\n[Open Settings](command:terminal-command-favorites.openSettings)",
+        "when": "!terminalCommandFavorites.hasFavorites"
+      }
+    ],
+    "commands": [
+      {
+        "command": "terminal-command-favorites.runFavorite",
+        "title": "Terminal Command Favorites: Run Favorite Command"
+      },
+      {
+        "command": "terminal-command-favorites.addFavorite",
+        "title": "Terminal Command Favorites: Add Favorite",
+        "icon": "$(add)"
+      },
+      {
+        "command": "terminal-command-favorites.editFavorite",
+        "title": "Terminal Command Favorites: Edit Favorite",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "terminal-command-favorites.deleteFavorite",
+        "title": "Terminal Command Favorites: Delete Favorite",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "terminal-command-favorites.runFavoriteFromSidebar",
+        "title": "Terminal Command Favorites: Run Favorite from Sidebar",
+        "icon": "$(play)"
+      },
+      {
+        "command": "terminal-command-favorites.copyFavoriteCommand",
+        "title": "Terminal Command Favorites: Copy Favorite Command",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "terminal-command-favorites.moveFavoriteUp",
+        "title": "Terminal Command Favorites: Move Favorite Up",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "terminal-command-favorites.moveFavoriteDown",
+        "title": "Terminal Command Favorites: Move Favorite Down",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "terminal-command-favorites.filterFavorites",
+        "title": "Terminal Command Favorites: Filter Favorites",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "terminal-command-favorites.clearFavoritesFilter",
+        "title": "Terminal Command Favorites: Clear Favorites Filter",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "terminal-command-favorites.openSettings",
+        "title": "Terminal Command Favorites: Open Settings",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "terminal-command-favorites.addFavorite",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoritesGroup",
+          "group": "inline@1"
+        },
+        {
+          "command": "terminal-command-favorites.runFavoriteFromSidebar",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "terminal-command-favorites.editFavorite",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "group": "inline@2"
+        },
+        {
+          "command": "terminal-command-favorites.copyFavoriteCommand",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "group": "inline@3"
+        },
+        {
+          "command": "terminal-command-favorites.moveFavoriteUp",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "group": "navigation@1"
+        },
+        {
+          "command": "terminal-command-favorites.moveFavoriteDown",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "group": "navigation@2"
+        },
+        {
+          "command": "terminal-command-favorites.deleteFavorite",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Terminal Command Favorites",
+      "properties": {
+        "terminalCommandFavorites.commands": {
+          "type": "array",
+          "default": [],
+          "description": "Favorite commands shown in Quick Pick. Each item can be a string command or an object with label and command.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "command"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Display name in the favorites list."
+                  },
+                  "command": {
+                    "type": "string",
+                    "description": "Command text sent to the active terminal."
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.109.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.54.0",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
