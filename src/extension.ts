@@ -41,8 +41,9 @@ class ScopeTreeItem extends vscode.TreeItem {
 		const title = scope === 'user' ? 'User Settings' : 'Workspace Settings';
 		const countLabel = isFiltered ? `${visibleCount}/${totalCount}` : `${totalCount}`;
 		super(`${title} (${countLabel})`, vscode.TreeItemCollapsibleState.Expanded);
+		this.id = `scope:${scope}`;
 		this.contextValue = 'favoritesGroup';
-		this.iconPath = new vscode.ThemeIcon(scope === 'user' ? 'account' : 'folder');
+		this.iconPath = new vscode.ThemeIcon(scope === 'user' ? 'account' : 'settings-gear');
 		this.description = scope === 'user' ? 'Global' : 'Local';
 	}
 }
@@ -50,6 +51,7 @@ class ScopeTreeItem extends vscode.TreeItem {
 class FavoriteTreeItem extends vscode.TreeItem {
 	constructor(public readonly favorite: Favorite) {
 		super(favorite.label, vscode.TreeItemCollapsibleState.None);
+		this.id = `favorite:${favorite.scope}:${favorite.index}:${favorite.label}:${favorite.command}`;
 		this.description = commandPreview(favorite.command);
 		const tooltip = new vscode.MarkdownString();
 		tooltip.appendText(favorite.label);
@@ -126,10 +128,8 @@ class FavoritesTreeDataProvider implements vscode.TreeDataProvider<FavoritesTree
 
 			const groups: FavoritesTreeNode[] = [];
 			const includeEmptyGroups = !this.hasFilter();
-			if (summary.userVisible > 0 || includeEmptyGroups) {
-				groups.push(new ScopeTreeItem('user', summary.userVisible, summary.userTotal, this.hasFilter()));
-			}
-			if (hasWorkspace() && (summary.workspaceVisible > 0 || includeEmptyGroups)) {
+			groups.push(new ScopeTreeItem('user', summary.userVisible, summary.userTotal, this.hasFilter()));
+			if (hasWorkspace()) {
 				groups.push(new ScopeTreeItem('workspace', summary.workspaceVisible, summary.workspaceTotal, this.hasFilter()));
 			}
 			return groups;
