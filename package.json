@@ -113,11 +113,59 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "terminal-command-favorites.runFavoriteFromSidebar",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.editFavorite",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.deleteFavorite",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.copyFavoriteCommand",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.moveFavoriteUp",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.moveFavoriteDown",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.moveFavoriteToOtherScope",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.filterFavorites",
+          "when": "false"
+        },
+        {
+          "command": "terminal-command-favorites.clearFavoritesFilter",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "terminal-command-favorites.addFavoriteFromRecent",
           "when": "view == terminalCommandFavoritesView",
           "group": "navigation@1"
+        },
+        {
+          "command": "terminal-command-favorites.filterFavorites",
+          "when": "view == terminalCommandFavoritesView && terminalCommandFavorites.hasFavorites && !terminalCommandFavorites.hasFilter",
+          "group": "navigation@2"
+        },
+        {
+          "command": "terminal-command-favorites.clearFavoritesFilter",
+          "when": "view == terminalCommandFavoritesView && terminalCommandFavorites.hasFilter",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
