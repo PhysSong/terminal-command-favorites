@@ -16,7 +16,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -40,7 +42,7 @@
     "viewsWelcome": [
       {
         "view": "terminalCommandFavoritesView",
-        "contents": "No favorite commands yet.\n[Add Favorite](command:terminal-command-favorites.addFavorite)\n[Open Settings](command:terminal-command-favorites.openSettings)",
+        "contents": "No favorite commands yet.\n[Add Favorite](command:terminal-command-favorites.addFavorite)\n[Add from Recent Commands](command:terminal-command-favorites.addFavoriteFromRecent)\n[Open Settings](command:terminal-command-favorites.openSettings)",
         "when": "!terminalCommandFavorites.hasFavorites"
       }
     ],
@@ -53,6 +55,11 @@
         "command": "terminal-command-favorites.addFavorite",
         "title": "Terminal Command Favorites: Add Favorite",
         "icon": "$(add)"
+      },
+      {
+        "command": "terminal-command-favorites.addFavoriteFromRecent",
+        "title": "Terminal Command Favorites: Add Favorite from Recent Commands",
+        "icon": "$(history)"
       },
       {
         "command": "terminal-command-favorites.editFavorite",
@@ -101,6 +108,13 @@
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "terminal-command-favorites.addFavoriteFromRecent",
+          "when": "view == terminalCommandFavoritesView",
+          "group": "navigation@1"
+        }
+      ],
       "view/item/context": [
         {
           "command": "terminal-command-favorites.addFavorite",

@@ -22,6 +22,7 @@ type FavoritesSummary = {
 
 const COMMAND_PREVIEW_LENGTH = 60;
 const DOUBLE_CLICK_WINDOW_MS = 500;
+const RECENT_COMMANDS_LIMIT = 20;
 
 function commandPreview(command: string): string {
 	const normalized = command.replace(/\s+/g, ' ').trim();
@@ -29,6 +30,22 @@ function commandPreview(command: string): string {
 		return normalized;
 	}
 	return `${normalized.slice(0, COMMAND_PREVIEW_LENGTH - 3)}...`;
+}
+
+export function rememberRecentCommand(recentCommands: string[], commandLine: string): void {
+	const command = commandLine.trim();
+	if (!command) {
+		return;
+	}
+
+	const existingIndex = recentCommands.indexOf(command);
+	if (existingIndex >= 0) {
+		recentCommands.splice(existingIndex, 1);
+	}
+	recentCommands.unshift(command);
+	if (recentCommands.length > RECENT_COMMANDS_LIMIT) {
+		recentCommands.length = RECENT_COMMANDS_LIMIT;
+	}
 }
 
 class ScopeTreeItem extends vscode.TreeItem {
@@ -278,6 +295,7 @@ function scopeFromNode(node?: FavoritesTreeNode): FavoriteScope | undefined {
 
 export function activate(context: vscode.ExtensionContext) {
 	const provider = new FavoritesTreeDataProvider();
+	const recentCommands: string[] = [];
 	const treeView = vscode.window.createTreeView('terminalCommandFavoritesView', {
 		treeDataProvider: provider
 	});
@@ -398,48 +416,85 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
+	const addFavorite = async (node?: FavoritesTreeNode, recentCommand?: string): Promise<void> => {
+		const scope = scopeFromNode(node) ?? await chooseScope('Save favorite to');
+		if (!scope) {
+			return;
+		}
+
+		if (scope === 'workspace' && !hasWorkspace()) {
+			vscode.window.showErrorMessage('No workspace is open. Open a folder to save workspace favorites.');
+			return;
+		}
+
+		const command = recentCommand ?? await vscode.window.showInputBox({
+			prompt: 'Command to send to terminal',
+			ignoreFocusOut: true,
+			validateInput: (value) => value.trim().length === 0 ? 'Command is required.' : undefined
+		});
+		if (!command) {
+			return;
+		}
+
+		const labelInput = await vscode.window.showInputBox({
+			prompt: 'Label shown in favorites list (optional)',
+			ignoreFocusOut: true,
+			value: command
+		});
+		if (labelInput === undefined) {
+			return;
+		}
+
+		const favorites = getFavoritesForScope(scope);
+		favorites.push({
+			scope,
+			index: favorites.length,
+			label: labelInput.trim() || command,
+			command
+		});
+		await saveFavorites(scope, favorites);
+		provider.refresh();
+	};
+
 	const addFavoriteDisposable = vscode.commands.registerCommand(
 		'terminal-command-favorites.addFavorite',
 		async (node?: FavoritesTreeNode) => {
-			const scope = scopeFromNode(node) ?? await chooseScope('Save favorite to');
-			if (!scope) {
-				return;
-			}
-
-			if (scope === 'workspace' && !hasWorkspace()) {
-				vscode.window.showErrorMessage('No workspace is open. Open a folder to save workspace favorites.');
-				return;
-			}
-
-			const command = await vscode.window.showInputBox({
-				prompt: 'Command to send to terminal',
-				ignoreFocusOut: true,
-				validateInput: (value) => value.trim().length === 0 ? 'Command is required.' : undefined
-			});
-			if (!command) {
-				return;
-			}
-
-			const labelInput = await vscode.window.showInputBox({
-				prompt: 'Label shown in favorites list (optional)',
-				ignoreFocusOut: true,
-				value: command
-			});
-			if (labelInput === undefined) {
-				return;
-			}
-
-			const favorites = getFavoritesForScope(scope);
-			favorites.push({
-				scope,
-				index: favorites.length,
-				label: labelInput.trim() || command,
-				command
-			});
-			await saveFavorites(scope, favorites);
-			provider.refresh();
+			await addFavorite(node);
 		}
 	);
+
+	const addFavoriteFromRecentDisposable = vscode.commands.registerCommand(
+		'terminal-command-favorites.addFavoriteFromRecent',
+		async () => {
+			if (recentCommands.length === 0) {
+				vscode.window.showInformationMessage(
+					'No recent commands found. Run a command in a terminal with shell integration enabled, then try again.'
+				);
+				return;
+			}
+
+			const picked = await vscode.window.showQuickPick(
+				recentCommands.map((command) => ({
+					label: commandPreview(command),
+					detail: command,
+					command
+				})),
+				{
+					placeHolder: 'Select a recent terminal command to add as a favorite',
+					matchOnDetail: true
+				}
+			);
+			if (!picked) {
+				return;
+			}
+
+			await addFavorite(undefined, picked.command);
+		}
+	);
+
+	const recentCommandsSubscription = vscode.window.onDidEndTerminalShellExecution((event) => {
+		rememberRecentCommand(recentCommands, event.execution.commandLine.value);
+	});
 
 	const editFavoriteDisposable = vscode.commands.registerCommand(
 		'terminal-command-favorites.editFavorite',
@@ -562,12 +617,14 @@ export function activate(context: vscode.ExtensionContext) {
 		runFromTreeItemDisposable,
 		copyFavoriteDisposable,
 		addFavoriteDisposable,
+		addFavoriteFromRecentDisposable,
 		editFavoriteDisposable,
 		moveFavoriteUpDisposable,
 		moveFavoriteDownDisposable,
 		deleteFavoriteDisposable,
 		filterFavoritesDisposable,
 		clearFavoritesFilterDisposable,
+		recentCommandsSubscription,
 		configWatcher
 	);
 
