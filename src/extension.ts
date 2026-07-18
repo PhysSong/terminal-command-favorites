@@ -1,13 +1,20 @@
 import * as vscode from 'vscode';
 
-type FavoriteScope = 'user' | 'workspace';
+export type FavoriteScope = 'user' | 'workspace';
 type FavoriteConfigEntry = string | { label?: string; command: string };
 
-type Favorite = {
+export type Favorite = {
 	scope: FavoriteScope;
 	index: number;
 	label: string;
 	command: string;
+};
+
+type FavoritesByScope = Record<FavoriteScope, Favorite[]>;
+
+export type FavoriteMoveResult = {
+	favorites: FavoritesByScope;
+	changed: boolean;
 };
 
 type FavoritesTreeNode = ScopeTreeItem | FavoriteTreeItem;
@@ -23,6 +30,47 @@ type FavoritesSummary = {
 const COMMAND_PREVIEW_LENGTH = 60;
 const DOUBLE_CLICK_WINDOW_MS = 500;
 const RECENT_COMMANDS_LIMIT = 20;
+const FAVORITES_TREE_MIME_TYPE = 'application/vnd.code.tree.terminalcommandfavoritesview';
+
+export function applyFavoriteMove(
+	favoritesByScope: Readonly<Record<FavoriteScope, readonly Favorite[]>>,
+	sourceScope: FavoriteScope,
+	sourceIndex: number,
+	destinationScope: FavoriteScope,
+	destinationIndex?: number
+): FavoriteMoveResult {
+	const favorites: FavoritesByScope = {
+		user: favoritesByScope.user.map((favorite) => ({ ...favorite })),
+		workspace: favoritesByScope.workspace.map((favorite) => ({ ...favorite }))
+	};
+	const sourceFavorites = favorites[sourceScope];
+	if (sourceIndex < 0 || sourceIndex >= sourceFavorites.length) {
+		throw new RangeError('Favorite no longer exists.');
+	}
+
+	const [movedFavorite] = sourceFavorites.splice(sourceIndex, 1);
+	const destinationFavorites = favorites[destinationScope];
+	const insertionIndex = destinationIndex === undefined
+		? destinationFavorites.length
+		: Math.max(0, Math.min(destinationIndex, destinationFavorites.length));
+	destinationFavorites.splice(insertionIndex, 0, {
+		...movedFavorite,
+		scope: destinationScope
+	});
+
+	for (const scope of ['user', 'workspace'] as const) {
+		favorites[scope] = favorites[scope].map((favorite, index) => ({
+			...favorite,
+			scope,
+			index
+		}));
+	}
+
+	return {
+		favorites,
+		changed: sourceScope !== destinationScope || sourceIndex !== insertionIndex
+	};
+}
 
 function commandPreview(command: string): string {
 	const normalized = command.replace(/\s+/g, ' ').trim();
@@ -164,6 +212,147 @@ class FavoritesTreeDataProvider implements vscode.TreeDataProvider<FavoritesTree
 	}
 }
 
+function favoritesMatch(first: Favorite, second: Favorite): boolean {
+	return first.label === second.label && first.command === second.command;
+}
+
+function findFavoriteIndex(favorites: Favorite[], candidate: Favorite): number {
+	if (favorites[candidate.index] && favoritesMatch(favorites[candidate.index], candidate)) {
+		return candidate.index;
+	}
+
+	const matchingIndexes = favorites
+		.map((favorite, index) => favoritesMatch(favorite, candidate) ? index : -1)
+		.filter((index) => index >= 0);
+	return matchingIndexes.length === 1 ? matchingIndexes[0] : -1;
+}
+
+class FavoritesDragAndDropController implements vscode.TreeDragAndDropController<FavoritesTreeNode> {
+	readonly dragMimeTypes = [FAVORITES_TREE_MIME_TYPE];
+	readonly dropMimeTypes = [FAVORITES_TREE_MIME_TYPE];
+
+	constructor(private readonly provider: FavoritesTreeDataProvider) {}
+
+	handleDrag(
+		source: readonly FavoritesTreeNode[],
+		dataTransfer: vscode.DataTransfer,
+		token: vscode.CancellationToken
+	): void {
+		if (token.isCancellationRequested) {
+			return;
+		}
+
+		const favorite = source.find((node): node is FavoriteTreeItem => node instanceof FavoriteTreeItem)?.favorite;
+		if (favorite) {
+			dataTransfer.set(FAVORITES_TREE_MIME_TYPE, new vscode.DataTransferItem({ ...favorite }));
+		}
+	}
+
+	async handleDrop(
+		target: FavoritesTreeNode | undefined,
+		dataTransfer: vscode.DataTransfer,
+		token: vscode.CancellationToken
+	): Promise<void> {
+		if (!target || token.isCancellationRequested) {
+			return;
+		}
+
+		const source = dataTransfer.get(FAVORITES_TREE_MIME_TYPE)?.value;
+		if (!this.isFavorite(source)) {
+			return;
+		}
+
+		const destinationScope = scopeFromNode(target);
+		if (!destinationScope) {
+			return;
+		}
+
+		try {
+			await this.moveFavorite(
+				source,
+				destinationScope,
+				target instanceof FavoriteTreeItem ? target.favorite : undefined
+			);
+		} catch (error) {
+			vscode.window.showErrorMessage(`Could not move favorite: ${this.errorMessage(error)}`);
+		}
+	}
+
+	async moveFavorite(
+		source: Favorite,
+		destinationScope: FavoriteScope,
+		destination?: Favorite
+	): Promise<boolean> {
+		if (destinationScope === 'workspace' && !hasWorkspace()) {
+			throw new Error('No workspace is open.');
+		}
+
+		const currentFavorites: FavoritesByScope = {
+			user: getFavoritesForScope('user'),
+			workspace: hasWorkspace() ? getFavoritesForScope('workspace') : []
+		};
+		const sourceIndex = findFavoriteIndex(currentFavorites[source.scope], source);
+		if (sourceIndex < 0) {
+			throw new Error('Favorite no longer exists.');
+		}
+
+		let destinationIndex: number | undefined;
+		if (destination) {
+			destinationIndex = findFavoriteIndex(currentFavorites[destinationScope], destination);
+			if (destinationIndex < 0) {
+				throw new Error('Drop target no longer exists.');
+			}
+		}
+
+		const result = applyFavoriteMove(
+			currentFavorites,
+			source.scope,
+			sourceIndex,
+			destinationScope,
+			destinationIndex
+		);
+		if (!result.changed) {
+			return false;
+		}
+
+		if (source.scope === destinationScope) {
+			await saveFavorites(source.scope, result.favorites[source.scope]);
+		} else {
+			// Save the destination first so a failed second update never loses the favorite.
+			await saveFavorites(destinationScope, result.favorites[destinationScope]);
+			try {
+				await saveFavorites(source.scope, result.favorites[source.scope]);
+			} catch (error) {
+				try {
+					await saveFavorites(destinationScope, currentFavorites[destinationScope]);
+				} catch {
+					// Preserve the original error; at worst the favorite exists in both scopes.
+				}
+				throw error;
+			}
+		}
+
+		this.provider.refresh();
+		return true;
+	}
+
+	private isFavorite(value: unknown): value is Favorite {
+		if (!value || typeof value !== 'object') {
+			return false;
+		}
+
+		const favorite = value as Partial<Favorite>;
+		return (favorite.scope === 'user' || favorite.scope === 'workspace')
+			&& typeof favorite.index === 'number'
+			&& typeof favorite.label === 'string'
+			&& typeof favorite.command === 'string';
+	}
+
+	private errorMessage(error: unknown): string {
+		return error instanceof Error ? error.message : String(error);
+	}
+}
+
 function getConfig(): vscode.WorkspaceConfiguration {
 	return vscode.workspace.getConfiguration('terminalCommandFavorites');
 }
@@ -295,9 +484,11 @@ function scopeFromNode(node?: FavoritesTreeNode): FavoriteScope | undefined {
 
 export function activate(context: vscode.ExtensionContext) {
 	const provider = new FavoritesTreeDataProvider();
+	const dragAndDropController = new FavoritesDragAndDropController(provider);
 	const recentCommands: string[] = [];
 	const treeView = vscode.window.createTreeView('terminalCommandFavoritesView', {
-		treeDataProvider: provider
+		treeDataProvider: provider,
+		dragAndDropController
 	});
 	context.subscriptions.push(treeView);
 	let pendingTreeRun:
@@ -321,6 +512,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		void vscode.commands.executeCommand('setContext', 'terminalCommandFavorites.hasFavorites', summary.total > 0);
 		void vscode.commands.executeCommand('setContext', 'terminalCommandFavorites.hasFilter', provider.hasFilter());
+		void vscode.commands.executeCommand('setContext', 'terminalCommandFavorites.hasWorkspace', hasWorkspace());
 	};
 
 	const moveFavorite = async (item: FavoriteTreeItem | undefined, direction: -1 | 1): Promise<void> => {
@@ -553,6 +745,29 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
+	const moveFavoriteToOtherScopeDisposable = vscode.commands.registerCommand(
+		'terminal-command-favorites.moveFavoriteToOtherScope',
+		async (item?: FavoriteTreeItem) => {
+			const target = item?.favorite ?? await chooseFavorite('Select a favorite to move to the other settings scope');
+			if (!target) {
+				return;
+			}
+
+			const destinationScope: FavoriteScope = target.scope === 'user' ? 'workspace' : 'user';
+			try {
+				const moved = await dragAndDropController.moveFavorite(target, destinationScope);
+				if (moved) {
+					vscode.window.showInformationMessage(
+						`Moved "${target.label}" to ${scopeLabel(destinationScope)} settings.`
+					);
+				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				vscode.window.showErrorMessage(`Could not move favorite: ${message}`);
+			}
+		}
+	);
+
 	const deleteFavoriteDisposable = vscode.commands.registerCommand(
 		'terminal-command-favorites.deleteFavorite',
 		async (item?: FavoriteTreeItem) => {
@@ -610,6 +825,9 @@ export function activate(context: vscode.ExtensionContext) {
 			provider.refresh();
 		}
 	});
+	const workspaceFoldersWatcher = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+		provider.refresh();
+	});
 
 	context.subscriptions.push(
 		runFavoriteDisposable,
@@ -621,11 +839,13 @@ export function activate(context: vscode.ExtensionContext) {
 		editFavoriteDisposable,
 		moveFavoriteUpDisposable,
 		moveFavoriteDownDisposable,
+		moveFavoriteToOtherScopeDisposable,
 		deleteFavoriteDisposable,
 		filterFavoritesDisposable,
 		clearFavoritesFilterDisposable,
 		recentCommandsSubscription,
-		configWatcher
+		configWatcher,
+		workspaceFoldersWatcher
 	);
 
 	const openSettingsDisposable = vscode.commands.registerCommand('terminal-command-favorites.openSettings', async () => {

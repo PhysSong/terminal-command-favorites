@@ -92,6 +92,11 @@
         "icon": "$(arrow-down)"
       },
       {
+        "command": "terminal-command-favorites.moveFavoriteToOtherScope",
+        "title": "Terminal Command Favorites: Move Favorite to Other Settings Scope",
+        "icon": "$(arrow-swap)"
+      },
+      {
         "command": "terminal-command-favorites.filterFavorites",
         "title": "Terminal Command Favorites: Filter Favorites",
         "icon": "$(filter)"
@@ -137,19 +142,14 @@
           "group": "inline@3"
         },
         {
-          "command": "terminal-command-favorites.moveFavoriteUp",
-          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
+          "command": "terminal-command-favorites.moveFavoriteToOtherScope",
+          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem && terminalCommandFavorites.hasWorkspace",
           "group": "navigation@1"
-        },
-        {
-          "command": "terminal-command-favorites.moveFavoriteDown",
-          "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
-          "group": "navigation@2"
         },
         {
           "command": "terminal-command-favorites.deleteFavorite",
           "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
-          "group": "navigation@3"
+          "group": "navigation@2"
         }
       ]
     },
