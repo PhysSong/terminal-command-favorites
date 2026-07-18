@@ -1,11 +1,11 @@
 {
-  "name": "terminal-command-favorites",
+  "name": "vscode-command-favorites",
   "displayName": "Terminal command favorites",
   "description": "",
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PhysSong/terminal-command-favorites"
+    "url": "https://github.com/PhysSong/vscode-command-favorites"
   },
   "author": "Hyunjin Song <tteu.ingog@gmail.com>",
   "publisher": "physsong",
@@ -42,72 +42,72 @@
     "viewsWelcome": [
       {
         "view": "terminalCommandFavoritesView",
-        "contents": "No favorite commands yet.\n[Add Favorite](command:terminal-command-favorites.addFavorite)\n[Add from Recent Commands](command:terminal-command-favorites.addFavoriteFromRecent)\n[Open Settings](command:terminal-command-favorites.openSettings)",
+        "contents": "No favorite commands yet.\n[Add Favorite](command:vscode-command-favorites.addFavorite)\n[Add from Recent Commands](command:vscode-command-favorites.addFavoriteFromRecent)\n[Open Settings](command:vscode-command-favorites.openSettings)",
         "when": "!terminalCommandFavorites.hasFavorites"
       }
     ],
     "commands": [
       {
-        "command": "terminal-command-favorites.runFavorite",
+        "command": "vscode-command-favorites.runFavorite",
         "title": "Terminal Command Favorites: Run Favorite Command"
       },
       {
-        "command": "terminal-command-favorites.addFavorite",
+        "command": "vscode-command-favorites.addFavorite",
         "title": "Terminal Command Favorites: Add Favorite",
         "icon": "$(add)"
       },
       {
-        "command": "terminal-command-favorites.addFavoriteFromRecent",
+        "command": "vscode-command-favorites.addFavoriteFromRecent",
         "title": "Terminal Command Favorites: Add Favorite from Recent Commands",
         "icon": "$(history)"
       },
       {
-        "command": "terminal-command-favorites.editFavorite",
+        "command": "vscode-command-favorites.editFavorite",
         "title": "Terminal Command Favorites: Edit Favorite",
         "icon": "$(edit)"
       },
       {
-        "command": "terminal-command-favorites.deleteFavorite",
+        "command": "vscode-command-favorites.deleteFavorite",
         "title": "Terminal Command Favorites: Delete Favorite",
         "icon": "$(trash)"
       },
       {
-        "command": "terminal-command-favorites.runFavoriteFromSidebar",
+        "command": "vscode-command-favorites.runFavoriteFromSidebar",
         "title": "Terminal Command Favorites: Run Favorite from Sidebar",
         "icon": "$(play)"
       },
       {
-        "command": "terminal-command-favorites.copyFavoriteCommand",
+        "command": "vscode-command-favorites.copyFavoriteCommand",
         "title": "Terminal Command Favorites: Copy Favorite Command",
         "icon": "$(copy)"
       },
       {
-        "command": "terminal-command-favorites.moveFavoriteUp",
+        "command": "vscode-command-favorites.moveFavoriteUp",
         "title": "Terminal Command Favorites: Move Favorite Up",
         "icon": "$(arrow-up)"
       },
       {
-        "command": "terminal-command-favorites.moveFavoriteDown",
+        "command": "vscode-command-favorites.moveFavoriteDown",
         "title": "Terminal Command Favorites: Move Favorite Down",
         "icon": "$(arrow-down)"
       },
       {
-        "command": "terminal-command-favorites.moveFavoriteToOtherScope",
+        "command": "vscode-command-favorites.moveFavoriteToOtherScope",
         "title": "Terminal Command Favorites: Move Favorite to Other Settings Scope",
         "icon": "$(arrow-swap)"
       },
       {
-        "command": "terminal-command-favorites.filterFavorites",
+        "command": "vscode-command-favorites.filterFavorites",
         "title": "Terminal Command Favorites: Filter Favorites",
         "icon": "$(filter)"
       },
       {
-        "command": "terminal-command-favorites.clearFavoritesFilter",
+        "command": "vscode-command-favorites.clearFavoritesFilter",
         "title": "Terminal Command Favorites: Clear Favorites Filter",
         "icon": "$(clear-all)"
       },
       {
-        "command": "terminal-command-favorites.openSettings",
+        "command": "vscode-command-favorites.openSettings",
         "title": "Terminal Command Favorites: Open Settings",
         "icon": "$(gear)"
       }
@@ -115,87 +115,87 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "terminal-command-favorites.runFavoriteFromSidebar",
+          "command": "vscode-command-favorites.runFavoriteFromSidebar",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.editFavorite",
+          "command": "vscode-command-favorites.editFavorite",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.deleteFavorite",
+          "command": "vscode-command-favorites.deleteFavorite",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.copyFavoriteCommand",
+          "command": "vscode-command-favorites.copyFavoriteCommand",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.moveFavoriteUp",
+          "command": "vscode-command-favorites.moveFavoriteUp",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.moveFavoriteDown",
+          "command": "vscode-command-favorites.moveFavoriteDown",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.moveFavoriteToOtherScope",
+          "command": "vscode-command-favorites.moveFavoriteToOtherScope",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.filterFavorites",
+          "command": "vscode-command-favorites.filterFavorites",
           "when": "false"
         },
         {
-          "command": "terminal-command-favorites.clearFavoritesFilter",
+          "command": "vscode-command-favorites.clearFavoritesFilter",
           "when": "false"
         }
       ],
       "view/title": [
         {
-          "command": "terminal-command-favorites.addFavoriteFromRecent",
+          "command": "vscode-command-favorites.addFavoriteFromRecent",
           "when": "view == terminalCommandFavoritesView",
           "group": "navigation@1"
         },
         {
-          "command": "terminal-command-favorites.filterFavorites",
+          "command": "vscode-command-favorites.filterFavorites",
           "when": "view == terminalCommandFavoritesView && terminalCommandFavorites.hasFavorites && !terminalCommandFavorites.hasFilter",
           "group": "navigation@2"
         },
         {
-          "command": "terminal-command-favorites.clearFavoritesFilter",
+          "command": "vscode-command-favorites.clearFavoritesFilter",
           "when": "view == terminalCommandFavoritesView && terminalCommandFavorites.hasFilter",
           "group": "navigation@2"
         }
       ],
       "view/item/context": [
         {
-          "command": "terminal-command-favorites.addFavorite",
+          "command": "vscode-command-favorites.addFavorite",
           "when": "view == terminalCommandFavoritesView && viewItem == favoritesGroup",
           "group": "inline@1"
         },
         {
-          "command": "terminal-command-favorites.runFavoriteFromSidebar",
+          "command": "vscode-command-favorites.runFavoriteFromSidebar",
           "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
           "group": "inline@1"
         },
         {
-          "command": "terminal-command-favorites.editFavorite",
+          "command": "vscode-command-favorites.editFavorite",
           "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
           "group": "inline@2"
         },
         {
-          "command": "terminal-command-favorites.copyFavoriteCommand",
+          "command": "vscode-command-favorites.copyFavoriteCommand",
           "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
           "group": "inline@3"
         },
         {
-          "command": "terminal-command-favorites.moveFavoriteToOtherScope",
+          "command": "vscode-command-favorites.moveFavoriteToOtherScope",
           "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem && terminalCommandFavorites.hasWorkspace",
           "group": "navigation@1"
         },
         {
-          "command": "terminal-command-favorites.deleteFavorite",
+          "command": "vscode-command-favorites.deleteFavorite",
           "when": "view == terminalCommandFavoritesView && viewItem == favoriteItem",
           "group": "navigation@2"
         }
